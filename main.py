@@ -2,12 +2,12 @@ import tkinter as tk
 import pystray
 import winreg
 import logging
+import os
 from tkinter import ttk, messagebox, scrolledtext
 from PIL import Image
 from time import sleep
 from sys import executable, exit
 from threading import Thread
-from os import path, startfile
 from psutil import process_iter
 from json import load, dump
 
@@ -18,7 +18,9 @@ class App:
         self.root.geometry("800x600")
         self.root.resizable(False, False)
         self.minimize_to_tray()
-        self.root.iconbitmap("icon.ico")
+        self.icon = self.resource_path("icon.ico")
+        print(self.icon)
+        self.root.iconbitmap(self.icon)
 
         # Меню
         self.menu_bar = tk.Menu(self.root)
@@ -130,7 +132,7 @@ class App:
     
     # Загрузка конфигурации
     def load_config(self):
-        if path.exists(self.CONFIG_FILE):
+        if os.path.exists(self.CONFIG_FILE):
             with open(self.CONFIG_FILE, "r") as f:
                 return load(f)
         return self.DEFAULT_CONFIG
@@ -167,7 +169,7 @@ class App:
     def add_to_startup(self):
         try:
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
-            winreg.SetValueEx(key, "R6Fix", 0, winreg.REG_SZ, executable + ' "' + path.abspath(__file__) + '"')
+            winreg.SetValueEx(key, "R6Fix", 0, winreg.REG_SZ, executable + ' "' + os.path.abspath(__file__) + '"')
             winreg.CloseKey(key)
             logging.info("Added to startup.")
         except Exception as e:
@@ -214,7 +216,7 @@ class App:
     
     def setup_tray(self):
         # Загружаем изображение для иконки
-        image = Image.open("icon.ico")
+        image = Image.open(self.icon)
         # Меню трея
         menu = pystray.Menu(
             pystray.MenuItem('Открыть', self.show_window, default=True),
@@ -236,6 +238,14 @@ class App:
         self.tray_icon.stop()
         self.root.destroy()
         exit(0)
+        
+    def resource_path(self, relative_path):
+        try:
+            base_path = os.sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+
+        return os.path.join(base_path, relative_path)
 
 if __name__ == "__main__":
     app = App()
