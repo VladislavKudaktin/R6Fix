@@ -10,6 +10,7 @@ from sys import executable, exit
 from threading import Thread
 from psutil import process_iter
 from json import load, dump
+from pathlib import Path
 
 class App:
     def __init__(self):
@@ -18,16 +19,28 @@ class App:
         self.root.geometry("800x600")
         self.root.resizable(False, False)
         self.minimize_to_tray()
+        self.appdata_dir = os.getenv('APPDATA')
+        self.config_path = Path(self.appdata_dir) / "R6Fix" / "config.json"
+        self.log_path = Path(self.appdata_dir) / "R6Fix" / "R6Fix.log"
+        self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self.icon = self.resource_path("icon.ico")
         print(self.icon)
         self.root.iconbitmap(self.icon)
+        
+        # Настройка логирования (ДОБАВЬТЕ ЭТО ВНУТРЬ __init__)
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            filename=self.log_path,
+            filemode="a",
+        )
 
         # Меню
         self.menu_bar = tk.Menu(self.root)
         self.root.config(menu=self.menu_bar)
 
         # Конфигурация
-        self.CONFIG_FILE = "config.json"
+        self.CONFIG_FILE = self.config_path
         self.DEFAULT_CONFIG = {
             "process_name": "RainbowSix_DX11.exe",
             "interval": 300,  # 5 минут
@@ -84,15 +97,6 @@ class App:
         
         # Обработка закрытия окна
         self.root.protocol('WM_DELETE_WINDOW', self.minimize_to_tray)
-        
-    
-    # Логирование
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        filename="R6Fix.log",
-        filemode="a",
-    )
     
     def update_interval_label(self, value):
         # Обновляем текст метки в зависимости от значения ползунка
