@@ -24,10 +24,9 @@ class App:
         self.log_path = Path(self.appdata_dir) / "R6Fix" / "R6Fix.log"
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
         self.icon = self.resource_path("icon.ico")
-        print(self.icon)
         self.root.iconbitmap(self.icon)
         
-        # Настройка логирования (ДОБАВЬТЕ ЭТО ВНУТРЬ __init__)
+        # Настройка логирования
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
@@ -173,7 +172,7 @@ class App:
     def add_to_startup(self):
         try:
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE)
-            winreg.SetValueEx(key, "R6Fix", 0, winreg.REG_SZ, executable + ' "' + os.path.abspath(__file__) + '"')
+            winreg.SetValueEx(key, "R6Fix", 0, winreg.REG_SZ, '"' + executable + '"')
             winreg.CloseKey(key)
             logging.info("Added to startup.")
         except Exception as e:
