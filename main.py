@@ -7,7 +7,7 @@ from tkinter import ttk, messagebox, scrolledtext
 from PIL import Image
 from time import sleep
 from sys import executable, exit
-from threading import Thread
+from threading import Thread, Event
 from psutil import process_iter
 from json import load, dump
 from pathlib import Path
@@ -41,7 +41,7 @@ class App:
         # Конфигурация
         self.CONFIG_FILE = self.config_path
         self.DEFAULT_CONFIG = {
-            "process_name": "RainbowSix_DX11.exe",
+            "process_name": "RainbowSix.exe",
             "interval": 300,  # 5 минут
             "autostart": False
             }
@@ -49,6 +49,7 @@ class App:
         # Меню "Главная"
         self.main_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.main_menu.add_command(label="Статус", command=self.show_status)
+        self.main_menu.add_command(label="Открыть файл логов", command=self.open_logs_file)
         self.main_menu.add_command(label="Закрыть", command=self.exit_app)
         self.menu_bar.add_cascade(label="Главная", menu=self.main_menu)
 
@@ -93,6 +94,7 @@ class App:
         # Поток для проверки процесса
         self.check_thread = Thread(target=self.monitor_process, daemon=True)
         self.check_thread.start()
+        self.stop_event = Event()
         
         # Обработка закрытия окна
         self.root.protocol('WM_DELETE_WINDOW', self.minimize_to_tray)
@@ -114,6 +116,13 @@ class App:
         status = "Процесс найден" if self.check_process() else "Процесс не найден"
         messagebox.showinfo("Статус", status)
         
+    def open_logs_file(self):
+    # Вариант 2: Непосредственно открыть файл логов
+        if os.path.exists(self.log_path):
+            os.startfile(self.log_path)
+        else:
+            messagebox.showerror("Ошибка", "Файл логов не найден!")
+        
     # Изменение настроек
     def change_config(self):
         new_name = self.process_entry.get()
@@ -130,6 +139,9 @@ class App:
                 else:
                     self.remove_from_startup()
                 messagebox.showinfo("Успех", "Настройки успешно изменены!.")
+                # Прерываем текущее ожидание потока
+                self.stop_event.set()
+                self.stop_event.clear()
         else:
             messagebox.showerror("Ошибка", "Название процесса не указано!")    
     
@@ -161,12 +173,16 @@ class App:
     
     # Мониторинг процесса
     def monitor_process(self):
-        config = self.load_config()
         while self.running:
+            config = self.load_config()
+            process_name = config["process_name"]
+            interval = config["interval"]
             for proc in process_iter(['pid', 'name']):
-                if proc.info['name'] == config["process_name"]:
+                if proc.info['name'] == process_name:
                     self.set_affinity(proc)
-            sleep(config["interval"])
+                    print("1234")
+            # Используем stop_event для ожидания с возможностью прерывания
+            self.stop_event.wait(interval)
         
     # Добавление в автозапуск
     def add_to_startup(self):
